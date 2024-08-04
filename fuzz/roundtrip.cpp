@@ -169,9 +169,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
       // invalid input!!!
       size_t expected_utf32words =
           e->utf32_length_from_utf8(source.c_str(), source.size());
-      std::unique_ptr<char32_t[]> utf32_output{
-        new char32_t[expected_utf32words]
-      };
+      std::unique_ptr<char32_t[]> utf32_output{new char32_t[expected_utf32words + 10]};
       // convert to UTF-32
       size_t utf32words = e->convert_utf8_to_utf32(
           source.c_str(), source.size(), utf32_output.get());
