@@ -173,15 +173,9 @@ struct Conversion
                             chardata.size() / sizeof(FromType)};
         do {
             // step 1 - is the input valid?
-            {
-                const auto [valid, agree] = verify_valid_input(from);
-                if (!agree && !allow_implementations_to_differ)
-                    break;
-                if (!valid) {
-                    //don't proceed, not valid input
-                    return;
-                }
-            }
+            const auto [inputisvalid, valid_input_agree] = verify_valid_input(from);
+            if (!valid_input_agree && !allow_implementations_to_differ)
+                break;
 
             // step 1.5 - count the input
             if constexpr (From == UtfEncodings::UTF16BE || From == UtfEncodings::UTF16LE
@@ -194,6 +188,11 @@ struct Conversion
             const auto [output_length, length_agree] = calculate_length(from);
             if (!length_agree && !allow_implementations_to_differ)
                 break;
+
+            if (!inputisvalid && name.find("valid") != std::string::npos) {
+                // don't run the conversion step, it requires valid input
+                return;
+            }
 
             // step 3 - run the conversion
             if constexpr (To != UtfEncodings::LATIN1) {
@@ -479,18 +478,20 @@ const auto populate_functions()
     std::tuple nameandptr(ADD(latin1_length_from_utf16, convert_valid_utf16be_to_latin1),
                           ADD(utf32_length_from_utf16be, convert_valid_utf16be_to_utf32),
                           ADD(utf8_length_from_utf16be, convert_valid_utf16be_to_utf8),
+
                           ADD(latin1_length_from_utf16, convert_valid_utf16le_to_latin1),
                           ADD(utf32_length_from_utf16le, convert_valid_utf16le_to_utf32),
                           ADD(utf8_length_from_utf16le, convert_valid_utf16le_to_utf8),
+
                           ADD(latin1_length_from_utf32, convert_valid_utf32_to_latin1),
                           ADD(utf16_length_from_utf32, convert_valid_utf32_to_utf16be),
                           ADD(utf16_length_from_utf32, convert_valid_utf32_to_utf16le),
                           ADD(utf8_length_from_utf32, convert_valid_utf32_to_utf8),
+
                           ADD(latin1_length_from_utf8, convert_valid_utf8_to_latin1), // <----
                           ADD(utf16_length_from_utf8, convert_valid_utf8_to_utf16be),
                           ADD(utf16_length_from_utf8, convert_valid_utf8_to_utf16le),
-                          ADD(utf32_length_from_utf8, convert_valid_utf8_to_utf32)
-    );
+                          ADD(utf32_length_from_utf8, convert_valid_utf8_to_utf32));
 #undef ADD
 #undef IGNORE
     return nameandptr;

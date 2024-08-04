@@ -347,3 +347,27 @@ TEST(issue_convert_valid_utf8_to_latin1_d4b91ecf2c5f2158)
         ASSERT_EQUAL(+output.at(i), +expected_out.at(i));
     };
 }
+
+TEST(issue_convert_valid_utf8_to_utf16le_91498ee0f0fe77dd)
+{
+    const unsigned char data[] = {0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+                                  0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+                                  0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+                                  0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+                                  0x20, 0x20, 0xc0, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+                                  0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20};
+    constexpr std::size_t data_len_bytes = sizeof(data);
+    constexpr std::size_t data_len = data_len_bytes / sizeof(char);
+    const auto validation1 = implementation.validate_utf8_with_errors((const char *) data, data_len);
+    ASSERT_EQUAL(validation1.count, 46);
+    ASSERT_EQUAL(validation1.error, simdutf::error_code::TOO_SHORT);
+
+    const auto outlen = implementation.utf16_length_from_utf8((const char *) data, data_len);
+    /*
+    got return 63 from implementation icelake
+    got return 64 from implementation haswell
+    got return 64 from implementation westmere
+    got return 64 from implementation fallback
+    */
+    ASSERT_EQUAL(outlen, 64);
+}
