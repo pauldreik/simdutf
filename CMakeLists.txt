@@ -197,3 +197,18 @@ if(NOT SIMDUTF_SANITIZE)
     )
   endif()
 endif()
+
+add_executable(validation fuzz/validation.cpp)
+target_link_libraries(validation PUBLIC simdutf)
+target_compile_features(validation PUBLIC cxx_std_20)
+target_link_options(validation PUBLIC -fsanitize=fuzzer)
+
+add_executable(conversion fuzz/conversion.cpp)
+target_link_libraries(conversion PUBLIC simdutf)
+target_compile_features(conversion PUBLIC cxx_std_20)
+target_link_options(conversion PUBLIC -fsanitize=fuzzer)
+
+add_executable(conversionvalid fuzz/conversion_valid.cpp)
+target_link_libraries(conversionvalid PUBLIC simdutf)
+target_compile_features(conversionvalid PUBLIC cxx_std_20)
+target_link_options(conversionvalid PUBLIC -fsanitize=fuzzer)

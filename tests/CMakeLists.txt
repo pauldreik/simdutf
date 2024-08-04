@@ -347,6 +347,11 @@ target_link_libraries(convert_valid_utf16be_to_utf32_tests
   PUBLIC simdutf::tests::helpers
          simdutf::tests::reference)
 
+add_cpp_test(fuzzercrashes)
+target_link_libraries(fuzzercrashes
+     PUBLIC simdutf::tests::helpers
+     simdutf::tests::reference)
+
 add_cpp_test(count_utf8)
 target_link_libraries(count_utf8
   PUBLIC simdutf::tests::helpers
