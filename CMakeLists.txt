@@ -212,3 +212,8 @@ add_executable(conversionvalid fuzz/conversion_valid.cpp)
 target_link_libraries(conversionvalid PUBLIC simdutf)
 target_compile_features(conversionvalid PUBLIC cxx_std_20)
 target_link_options(conversionvalid PUBLIC -fsanitize=fuzzer)
+
+add_executable(roundtrip fuzz/roundtrip.cpp)
+target_link_libraries(roundtrip PUBLIC simdutf)
+target_compile_features(roundtrip PUBLIC cxx_std_20)
+target_link_options(roundtrip PUBLIC -fsanitize=fuzzer)
