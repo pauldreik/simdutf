@@ -328,7 +328,7 @@ struct Conversion
             if (inputisvalid) {
                 ret.implementations_agree = false;
             } else {
-                std::cerr << "FIXME: ignoring that implementations differ\n";
+                std::cerr << "impementations are allowed to disagree on invalid input\n";
                 ret.implementations_agree = true;
             }
         } else {
