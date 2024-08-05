@@ -173,6 +173,14 @@ struct Conversion
         // assume the input is aligned to FromType
         const FromSpan from{reinterpret_cast<const FromType *>(chardata.data()),
                             chardata.size() / sizeof(FromType)};
+
+        static const bool do_print_testcase = std::getenv("PRINT_FUZZ_CASE") != nullptr;
+
+        if (do_print_testcase) {
+            dump_testcase(from, std::cerr);
+            std::exit(EXIT_SUCCESS);
+        }
+
         do {
             // step 1 - is the input valid?
             const auto [inputisvalid, valid_input_agree] = verify_valid_input(from);
@@ -209,7 +217,8 @@ struct Conversion
             return;
         } while (0);
         // if we come here, something failed
-        dump_testcase(from, std::cerr);
+        std::cerr
+            << "something failed, rerun with PRINT_FUZZ_CASE set to print a reproducer to stderr\n";
         std::abort();
     }
 
@@ -560,11 +569,33 @@ const auto populate_functions()
         ADD(latin1_length_from_utf8, convert_utf8_to_latin1),
         ADD(utf16_length_from_utf8, convert_utf8_to_utf16be),
         ADD(utf16_length_from_utf8, convert_utf8_to_utf16le),
-        ADD(utf32_length_from_utf8, convert_utf8_to_utf32_with_errors));
+        ADD(utf32_length_from_utf8, convert_utf8_to_utf32));
+
+    std::tuple cases_no_requirements_with_errors(
+        // all these cases operate on arbitrary data and use the _with_errors variant
+        ADD(latin1_length_from_utf16, convert_utf16be_to_latin1_with_errors),
+        ADD(utf32_length_from_utf16be, convert_utf16be_to_utf32_with_errors),
+        ADD(utf8_length_from_utf16be, convert_utf16be_to_utf8_with_errors),
+
+        ADD(latin1_length_from_utf16, convert_utf16le_to_latin1_with_errors),
+        ADD(utf32_length_from_utf16le, convert_utf16le_to_utf32_with_errors),
+        ADD(utf8_length_from_utf16le, convert_utf16le_to_utf8_with_errors),
+
+        ADD(latin1_length_from_utf32, convert_utf32_to_latin1_with_errors),
+        ADD(utf16_length_from_utf32, convert_utf32_to_utf16be_with_errors),
+        ADD(utf16_length_from_utf32, convert_utf32_to_utf16le_with_errors),
+        ADD(utf8_length_from_utf32, convert_utf32_to_utf8_with_errors),
+
+        ADD(latin1_length_from_utf8, convert_utf8_to_latin1_with_errors),
+        ADD(utf16_length_from_utf8, convert_utf8_to_utf16be_with_errors),
+        ADD(utf16_length_from_utf8, convert_utf8_to_utf16le_with_errors),
+        IGNORE(utf32_length_from_utf8, convert_utf8_to_utf32_with_errors));
 
 #undef ADD
 #undef IGNORE
-    return std::tuple_cat(cases_requiring_valid_data, cases_no_requirements);
+    return std::tuple_cat(cases_requiring_valid_data,
+                          cases_no_requirements,
+                          cases_no_requirements_with_errors);
 }
 
 /*

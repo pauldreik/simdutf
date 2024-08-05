@@ -109,7 +109,7 @@ rm -f crash-*
 rm -f crash-*
 ./build.sh && out/conversion_valid ../corpus/conversion_valid/
 ./build.sh && ./minimize_and_cleanse.sh out/conversion_valid crash-*
-./build.sh && out/conversion_valid cleaned_crash.conversion_valid >blah 2>&1 
+./build.sh && PRINT_FUZZ_CASE= out/conversion_valid cleaned_crash.conversion_valid >blah 2>&1 
 sed  -n '/begin testcase/,/end testcase/p' blah >> ../tests/fuzzercrashes.cpp
 (echo '/*';sed  -n '/begin errormessage/,/end errormessage/p' blah ; echo '*/') >> ../tests/fuzzercrashes.cpp
 mv crash-* ../corpus/conversion_valid
