@@ -471,7 +471,17 @@ struct Conversion
         os << "std::vector<" << nameoftype(ToType{}) << "> output(outlen);\n";
         os << "const auto r = implementation." << name << "((const " << nameoftype(FromType{})
            << "*) data\n, data_len\n, output.data());\n";
-        os << "   ASSERT_EQUAL(r, 1234);\n";
+        using R = std::invoke_result_t<ConversionFunction,
+                                       const simdutf::implementation *,
+                                       const FromType *,
+                                       std::size_t,
+                                       ToType *>;
+        if constexpr (std::is_same_v<R, simdutf::result>) {
+            os << " ASSERT_EQUAL(r.error,simdutf::error_code::SUCCESS);\n";
+            os << " ASSERT_EQUAL(r.count,1234);\n";
+        } else {
+            os << "   ASSERT_EQUAL(r, 1234);\n";
+        }
 
         // dump the output data
         os << "const std::vector<" << nameoftype(ToType{}) << "> expected_out{};\n";

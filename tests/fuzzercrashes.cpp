@@ -403,3 +403,32 @@ TEST(issue_convert_utf8_to_utf32_8bad4f475a64f51e)
                                                         output.data());
     ASSERT_EQUAL(r, 0);
 }
+
+TEST(issue_convert_utf8_to_utf32_with_errors_48671aed05deb2eb)
+{
+    const unsigned char data[] = {0x20, 0xdf, 0xbb, 0xcd, 0x8d, 0xcf, 0xbb, 0x20, 0x20, 0xdf, 0xbb,
+                                  0xdf, 0xbb, 0xcd, 0xbb, 0xcd, 0xbb, 0xde, 0xbb, 0xdf, 0xbb, 0xcd,
+                                  0xa9, 0xdf, 0xbb, 0xdf, 0xbb, 0xdf, 0xbb, 0xdf, 0xbb, 0xcd, 0xbb,
+                                  0xcd, 0xbb, 0xde, 0xbb, 0xdf, 0xbb, 0xcd, 0xa9, 0xd8, 0xbb, 0xdf,
+                                  0xbb, 0xdf, 0xbb, 0xdf, 0xbb, 0xdf, 0xbb, 0xdf, 0xb3, 0xdf, 0xbb,
+                                  0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0xb9};
+    constexpr std::size_t data_len_bytes = sizeof(data);
+    constexpr std::size_t data_len = data_len_bytes / sizeof(char);
+    const auto validation1 = implementation.validate_utf8_with_errors((const char *) data, data_len);
+    ASSERT_EQUAL(validation1.count, 64);
+    ASSERT_EQUAL(validation1.error, simdutf::error_code::TOO_LONG);
+
+    const auto outlen = implementation.utf32_length_from_utf8((const char *) data, data_len);
+    ASSERT_EQUAL(outlen, 38);
+    std::vector<char32_t> output(outlen);
+    const auto r = implementation.convert_utf8_to_utf32_with_errors((const char *) data,
+                                                                    data_len,
+                                                                    output.data());
+    ASSERT_EQUAL(r.error, simdutf::error_code::SUCCESS);
+    ASSERT_EQUAL(r.count, 1234);
+    const std::vector<char32_t> expected_out{};
+    ASSERT_TRUE(output.size() == expected_out.size());
+    for (std::size_t i = 0; i < output.size(); ++i) {
+        ASSERT_EQUAL(+output.at(i), +expected_out.at(i));
+    };
+}
