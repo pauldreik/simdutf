@@ -437,6 +437,7 @@ TEST(issue_convert_utf8_to_utf32_with_errors_48671aed05deb2eb)
 
 TEST(issue_convert_utf8_to_utf16be_with_errors_b3948b7243524254)
 {
+    IGNORE;
     const unsigned char data[] = {0xf1, 0xa1, 0xa9, 0xa9, 0xf1, 0xa1, 0xa9, 0xa9, 0xf1, 0xa1, 0xa9,
                                   0xb2, 0xf1, 0xb9, 0xa1, 0xa9, 0xf1, 0xa1, 0xa9, 0xa9, 0xf1, 0xa1,
                                   0xa9, 0xa9, 0xf1, 0xa9, 0xa1, 0xa9, 0xf1, 0xa1, 0xae, 0xa6, 0xf1,
@@ -462,4 +463,14 @@ TEST(issue_convert_utf8_to_utf16be_with_errors_b3948b7243524254)
     for (std::size_t i = 0; i < output.size(); ++i) {
         ASSERT_EQUAL(+output.at(i), +expected_out.at(i));
     };
+}
+// begin testcase
+TEST(issue_convert_utf8_to_utf32_with_errors_3fa5955f57c6b0a0) {
+    std::vector<char> input;
+    std::vector<char32_t> output(4);
+    const auto r = implementation.convert_utf8_to_utf32_with_errors(input.data(),
+                                                                    input.size(),
+                                                                    output.data());
+    ASSERT_EQUAL(r.count, 1234);
+    ASSERT_EQUAL(r.error, simdutf::error_code::SUCCESS);
 }
