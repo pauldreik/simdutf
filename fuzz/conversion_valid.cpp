@@ -115,13 +115,15 @@ std::string_view nameoftype(char32_t)
         } \
     }()
 
+template<typename R>
 struct result
 {
-    std::size_t retval{};
+    R retval{};
     std::string outputhash;
-    auto operator<=>(const result &) const = default;
+    auto operator<=>(const result<R> &) const = default;
 };
-std::ostream &operator<<(std::ostream &os, const result &r)
+template<typename R>
+std::ostream &operator<<(std::ostream &os, const result<R> &r)
 {
     os << "[retval=" << r.retval << ", output hash=" << r.outputhash << "]";
     return os;
@@ -195,7 +197,7 @@ struct Conversion
             }
 
             // step 3 - run the conversion
-            break;
+            //break;
             if constexpr (To != UtfEncodings::LATIN1) {
                 const auto [written, outputs_agree] = do_conversion(from,
                                                                     output_length,
@@ -345,7 +347,13 @@ struct Conversion
 
         const auto implementations = get_supported_implementations();
 
-        std::vector<result> results;
+        using R = std::invoke_result_t<ConversionFunction,
+                                       const simdutf::implementation *,
+                                       const FromType *,
+                                       std::size_t,
+                                       ToType *>;
+
+        std::vector<result<R>> results;
         results.reserve(implementations.size());
 
         // put the output in a separate allocation to make access violations easier to catch
@@ -542,7 +550,7 @@ const auto populate_functions()
         ADD(latin1_length_from_utf8, convert_utf8_to_latin1),
         ADD(utf16_length_from_utf8, convert_utf8_to_utf16be),
         ADD(utf16_length_from_utf8, convert_utf8_to_utf16le),
-        ADD(utf32_length_from_utf8, convert_utf8_to_utf32));
+        ADD(utf32_length_from_utf8, convert_utf8_to_utf32_with_errors));
 
 #undef ADD
 #undef IGNORE

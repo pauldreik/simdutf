@@ -43,6 +43,10 @@ inline bool operator!=(const simdutf::result &a, const simdutf::result &b)
 {
     return a.count != b.count || a.error != b.error;
 }
+inline bool operator==(const simdutf::result &a, const simdutf::result &b)
+{
+    return a.count == b.count && a.error == b.error;
+}
 
 inline std::ostream &operator<<(std::ostream &os, const simdutf::result &a)
 {
