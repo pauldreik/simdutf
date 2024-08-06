@@ -126,7 +126,7 @@ struct Invoker
                                                        chardata.data()),
                                                    chardata.size() / sizeof(InputType)};
         // FIXME: drop the empty check once https://github.com/simdutf/simdutf/issues/468 is fixed
-        if (try_different_alignment && !typedspan.empty()) {
+        if (try_different_alignment /*&& !typedspan.empty()*/) {
             std::vector<InputType> input(begin(typedspan), end(typedspan));
             compare_implementations(funcptr, std::span(input));
             // insert a bogus element to shift them one step
