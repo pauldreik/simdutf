@@ -170,10 +170,14 @@ struct Conversion
 
     void fuzz(std::span<const char> chardata) const
     {
+#if 1
+        std::vector<FromType> empty;
+        const auto from = std::span(empty);
+#else
         // assume the input is aligned to FromType
         const FromSpan from{reinterpret_cast<const FromType *>(chardata.data()),
                             chardata.size() / sizeof(FromType)};
-
+#endif
         static const bool do_print_testcase = std::getenv("PRINT_FUZZ_CASE") != nullptr;
 
         if (do_print_testcase) {
