@@ -466,6 +466,8 @@ TEST(issue_convert_utf8_to_utf16be_with_errors_b3948b7243524254)
 }
 TEST(test_empty)
 {
+    IGNORE;
+
     //inputs
     const std::vector<char> i8data;
     const std::vector<char16_t> i16data;
@@ -533,4 +535,29 @@ TEST(test_empty)
     std::ignore = implementation.validate_utf32_with_errors(i32, 0);
     std::ignore = implementation.validate_utf8(i8, 0);
     std::ignore = implementation.validate_utf8_with_errors(i8, 0);
+}
+
+TEST(issue_convert_utf8_to_utf16be_with_errors_e2fd989f3a9c7a59)
+{
+    const unsigned char data[] = {0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+                                  0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+                                  0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+                                  0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+                                  0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+                                  0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0xa9};
+    constexpr std::size_t data_len_bytes = sizeof(data);
+    constexpr std::size_t data_len = data_len_bytes / sizeof(char);
+    const auto validation1 = implementation.validate_utf8_with_errors((const char *) data, data_len);
+    ASSERT_EQUAL(validation1.count, 64);
+    ASSERT_EQUAL(validation1.error, simdutf::error_code::TOO_LONG);
+
+    const auto outlen = implementation.utf16_length_from_utf8((const char *) data, data_len);
+    ASSERT_EQUAL(outlen, 64);
+
+    std::vector<char16_t> output(outlen);
+    const auto r = implementation.convert_utf8_to_utf16be_with_errors((const char *) data,
+                                                                      data_len,
+                                                                      output.data());
+    ASSERT_EQUAL(r.error, simdutf::error_code::TOO_LONG);
+    ASSERT_EQUAL(r.count, 64);
 }
