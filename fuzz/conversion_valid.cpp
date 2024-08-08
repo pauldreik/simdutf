@@ -1,4 +1,4 @@
-// this fuzzes the convert_ functions (those that not assume valid input).
+// this fuzzes the convert_ functions
 // by Paul Dreik 2024
 
 #include <algorithm>
@@ -16,8 +16,10 @@
 
 #include "simdutf.h"
 
+// these nobs tweak how the fuzzer works
 constexpr bool allow_implementations_to_differ = false;
 constexpr bool use_canary_in_output = true;
+constexpr bool use_separate_allocation = true;
 
 enum class UtfEncodings { UTF16BE, UTF16LE, UTF8, UTF32, LATIN1 };
 
@@ -67,15 +69,15 @@ struct ValidationFunctionTrait<UtfEncodings::LATIN1>
     using RawType = char;
 };
 
-std::string_view nameoftype(char)
+constexpr std::string_view nameoftype(char)
 {
     return "char";
 }
-std::string_view nameoftype(char16_t)
+constexpr std::string_view nameoftype(char16_t)
 {
     return "char16_t";
 }
-std::string_view nameoftype(char32_t)
+constexpr std::string_view nameoftype(char32_t)
 {
     return "char32_t";
 }
@@ -144,7 +146,6 @@ struct Conversion
     using ToType = ValidationFunctionTrait<To>::RawType;
 
     using FromSpan = std::span<const FromType>;
-    using ToSpan = std::span<ToType>;
 
     using ConversionResult = std::invoke_result<ConversionFunction,
                                                 const simdutf::implementation *,
@@ -170,14 +171,10 @@ struct Conversion
 
     void fuzz(std::span<const char> chardata) const
     {
-#if 0
-        std::vector<FromType> empty;
-        const auto from = std::span(empty);
-#else
         // assume the input is aligned to FromType
         const FromSpan from{reinterpret_cast<const FromType *>(chardata.data()),
                             chardata.size() / sizeof(FromType)};
-#endif
+
         static const bool do_print_testcase = std::getenv("PRINT_FUZZ_CASE") != nullptr;
 
         if (do_print_testcase) {
@@ -186,12 +183,12 @@ struct Conversion
         }
 
         do {
-            // step 1 - is the input valid?
+            // step 0 - is the input valid?
             const auto [inputisvalid, valid_input_agree] = verify_valid_input(from);
             if (!valid_input_agree && !allow_implementations_to_differ)
                 break;
 
-            // step 1.5 - count the input
+            // step 1 - count the input
             if constexpr (From == UtfEncodings::UTF16BE || From == UtfEncodings::UTF16LE
                           || From == UtfEncodings::UTF8) {
                 if (!count_the_input(from) && !allow_implementations_to_differ)
@@ -209,7 +206,6 @@ struct Conversion
             }
 
             // step 3 - run the conversion
-            //break;
             if constexpr (To != UtfEncodings::LATIN1) {
                 const auto [written, outputs_agree] = do_conversion(from,
                                                                     output_length,
@@ -360,13 +356,7 @@ struct Conversion
 
         const auto implementations = get_supported_implementations();
 
-        using R = std::invoke_result_t<ConversionFunction,
-                                       const simdutf::implementation *,
-                                       const FromType *,
-                                       std::size_t,
-                                       ToType *>;
-
-        std::vector<result<R>> results;
+        std::vector<result<ConversionResult>> results;
         results.reserve(implementations.size());
 
         // put the output in a separate allocation to make access violations easier to catch
@@ -484,12 +474,8 @@ struct Conversion
         os << "std::vector<" << nameoftype(ToType{}) << "> output(outlen);\n";
         os << "const auto r = implementation." << name << "((const " << nameoftype(FromType{})
            << "*) data\n, data_len\n, output.data());\n";
-        using R = std::invoke_result_t<ConversionFunction,
-                                       const simdutf::implementation *,
-                                       const FromType *,
-                                       std::size_t,
-                                       ToType *>;
-        if constexpr (std::is_same_v<R, simdutf::result>) {
+
+        if constexpr (std::is_same_v<ConversionResult, simdutf::result>) {
             os << " ASSERT_EQUAL(r.error,simdutf::error_code::SUCCESS);\n";
             os << " ASSERT_EQUAL(r.count,1234);\n";
         } else {
@@ -593,7 +579,7 @@ const auto populate_functions()
         ADD(latin1_length_from_utf8, convert_utf8_to_latin1_with_errors),
         ADD(utf16_length_from_utf8, convert_utf8_to_utf16be_with_errors),
         ADD(utf16_length_from_utf8, convert_utf8_to_utf16le_with_errors),
-        IGNORE(utf32_length_from_utf8, convert_utf8_to_utf32_with_errors));
+        ADD(utf32_length_from_utf8, convert_utf8_to_utf32_with_errors));
 
 #undef ADD
 #undef IGNORE
@@ -664,8 +650,14 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     const auto action = data[0] & actionmask;
     data += 4;
     size -= 4;
-    std::span<const char> chardata{(const char *) data, size};
-    pickfromtuple(action, fptrs, chardata);
+
+    if constexpr (use_separate_allocation) {
+        const std::vector<char> separate{data, data + size};
+        pickfromtuple(action, fptrs, std::span(separate));
+    } else {
+        std::span<const char> chardata{(const char *) data, size};
+        pickfromtuple(action, fptrs, chardata);
+    }
 
     return 0;
 }
