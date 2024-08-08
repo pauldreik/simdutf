@@ -170,7 +170,7 @@ struct Conversion
 
     void fuzz(std::span<const char> chardata) const
     {
-#if 1
+#if 0
         std::vector<FromType> empty;
         const auto from = std::span(empty);
 #else
@@ -450,7 +450,7 @@ struct Conversion
 
         os << "// begin testcase\n";
         os << "TEST(issue_" << name << "_" << testhash << ") {\n";
-        os << " const unsigned char data[]={";
+        os << " alignas(" << sizeof(FromType) << ") const unsigned char data[]={";
         const auto first = reinterpret_cast<const unsigned char *>(typedspan.data());
         const auto last = first + typedspan.size_bytes();
         for (auto it = first; it != last; ++it) {
