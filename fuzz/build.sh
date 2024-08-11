@@ -14,7 +14,7 @@ if [ -z $SRC ] ; then
     SCRIPTDIR=$(dirname "$0")
     cd "$SCRIPTDIR/.."
 
-    export CXX=/usr/lib/ccache/clang++-18
+    export CXX=/usr/lib/ccache/clang++-17
     export CXXFLAGS="-fsanitize=fuzzer-no-link,address,undefined -g -O1 -fsanitize-trap=undefined"
     export LIB_FUZZING_ENGINE="-fsanitize=fuzzer"
     export OUT=fuzz/out
