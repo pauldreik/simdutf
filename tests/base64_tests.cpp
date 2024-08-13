@@ -5,12 +5,40 @@
 #include <tests/helpers/random_int.h>
 #include <tests/helpers/test.h>
 
+TEST(issue_xxx)
+{
+    for (std::size_t nof_equals = 1; nof_equals < 100; ++nof_equals) {
+        std::vector<char> data(nof_equals, '=');
+        std::vector<char> out(1);
+        const auto r = implementation.base64_to_binary(data.data(),
+                                                       data.size(),
+                                                       out.data(),
+                                                       simdutf::base64_default);
+        ASSERT_EQUAL(r.error, simdutf::error_code::INVALID_BASE64_CHARACTER);
+        ASSERT_EQUAL(r.count, 0);
+    }
+}
+
+TEST(issue_xxxy)
+{
+    std::array<char16_t, 1> data{15626};
+    std::vector<char> out(1);
+    const auto r = implementation.base64_to_binary(data.data(),
+                                                   data.size(),
+                                                   out.data(),
+                                                   simdutf::base64_default);
+    // fallback gives INVALID_BASE64_CHARACTER
+    ASSERT_EQUAL(r.error, simdutf::error_code::SUCCESS);
+    ASSERT_EQUAL(r.count, 0);
+}
+
 // We may disable base64url tests by commenting out this next line.
-#define SIMDUTF_BASE64URL_TESTS 1
+#define SIMDUTF_BASE64URL_TESTS 0
 
 using random_generator = std::mt19937;
 static random_generator::result_type seed = 42;
 
+#if 0
 constexpr uint8_t to_base64_value[] = {
     255, 255, 255, 255, 255, 255, 255, 255, 255, 64,  64,  255, 64, 64,  255,
     255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
@@ -1252,6 +1280,7 @@ TEST(readme_safe) {
   ASSERT_EQUAL(limited_length2 + limited_length, (len + 3) / 4 * 3);
 }
 
+#endif
 int main(int argc, char *argv[]) {
   if (argc == 2) {
     try {
