@@ -69,10 +69,18 @@ void decode(std::span<const FromChar> base64, const auto selected_option) {
     const auto implementations = get_supported_implementations();
     std::size_t i = 0;
     for (const auto& r : results) {
-      std::cerr << "impl " << implementations[i]->name() << " got "
-                << r.maxbinarylength << " result " << r.convertresult << "\n";
+      std::cerr << "impl " << implementations[i]->name()
+                << " got maxbinarylength=" << r.maxbinarylength
+                << " convertresult=" << r.convertresult << "\n";
       ++i;
     }
+    std::cerr << "option: " << selected_option << '\n';
+    std::cerr << "data: "
+              << (std::is_same_v<FromChar, char> ? "char" : "char16_t") << "{";
+    for (int v : base64) {
+      std::cerr << v << ", ";
+    }
+    std::cerr << "}\n";
     std::abort();
   }
 }
