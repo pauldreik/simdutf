@@ -51,7 +51,12 @@ struct decoderesult {
 };
 
 template <typename FromChar>
-void decode(std::span<const FromChar> base64, const auto selected_option) {
+void decode(std::span<const FromChar> base64_, const auto selected_option) {
+  // force to ascii
+  std::vector<FromChar> base64(begin(base64_), end(base64_));
+  for (auto& x : base64) {
+    x &= 0xFF;
+  }
   const auto implementations = get_supported_implementations();
   std::vector<decoderesult> results;
   results.reserve(implementations.size());
