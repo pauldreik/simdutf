@@ -396,7 +396,7 @@ simdutf_warn_unused result implementation::base64_to_binary(const char * input, 
   }
   if(length == 0) {
     if(equalsigns > 0) {
-      return {INVALID_BASE64_CHARACTER, equallocation - equalsigns};
+      return {INVALID_BASE64_CHARACTER, equallocation};
     }
     return {SUCCESS, 0};
   }
