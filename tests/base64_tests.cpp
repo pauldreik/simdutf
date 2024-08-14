@@ -21,19 +21,17 @@ TEST(issue_502)
 
 TEST(issue_503)
 {
-    return;
     std::array<char16_t, 1> data{15626};
     std::vector<char> out(1);
     const auto r = implementation.base64_to_binary(data.data(),
                                                    data.size(),
                                                    out.data(),
                                                    simdutf::base64_default);
-    // fallback gives INVALID_BASE64_CHARACTER
-    ASSERT_EQUAL(r.error, simdutf::error_code::SUCCESS);
+    ASSERT_EQUAL(r.error, simdutf::error_code::INVALID_BASE64_CHARACTER);
     ASSERT_EQUAL(r.count, 0);
 }
 
-TEST(issue_xxx)
+TEST(issue_504)
 {
     std::array<char16_t, 1> data{61};
     std::vector<char> out(1);

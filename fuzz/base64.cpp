@@ -5,6 +5,8 @@
 #include "helpers/common.h"
 #include "simdutf.h"
 
+constexpr bool allow_invalid_16bit_input = false;
+
 // simdutf::implementation::base64_length_from_binary();
 // simdutf::implementation::maximal_binary_length_from_base64();
 // simdutf::implementation::binary_to_base64();
@@ -52,10 +54,14 @@ struct decoderesult {
 
 template <typename FromChar>
 void decode(std::span<const FromChar> base64_, const auto selected_option) {
-  // force to ascii
+  // force to ascii to follow the restriction on the base64_to_binary input.
+  // however, not doing so uncovered a real bug, see
+  // https://github.com/simdutf/simdutf/issues/503#issuecomment-2287154397
   std::vector<FromChar> base64(begin(base64_), end(base64_));
-  for (auto& x : base64) {
-    x &= 0xFF;
+  if (!allow_invalid_16bit_input) {
+    for (auto& x : base64) {
+      x &= 0xFF;
+    }
   }
   const auto implementations = get_supported_implementations();
   std::vector<decoderesult> results;
