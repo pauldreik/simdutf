@@ -43,6 +43,18 @@ TEST(issue_504)
     ASSERT_EQUAL(r.count, 0);
 }
 
+TEST(issue_509)
+{
+    std::vector<char> data{' ', '='};
+    std::vector<char> out(1);
+    const auto r = implementation.base64_to_binary(data.data(),
+                                                   data.size(),
+                                                   out.data(),
+                                                   simdutf::base64_default);
+    ASSERT_EQUAL(r.error, simdutf::error_code::INVALID_BASE64_CHARACTER);
+    ASSERT_EQUAL(r.count, 0);
+}
+
 // We may disable base64url tests by commenting out this next line.
 #define SIMDUTF_BASE64URL_TESTS 0
 
