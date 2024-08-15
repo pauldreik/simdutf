@@ -7,39 +7,6 @@
 
 constexpr bool allow_invalid_16bit_input = false;
 
-// simdutf::implementation::base64_length_from_binary();
-// simdutf::implementation::maximal_binary_length_from_base64();
-// simdutf::implementation::binary_to_base64();
-// simdutf::implementation::base64_to_binary();
-
-#if 0
-size_t maximal_binary_length_from_base64(const char* input,
-                                         size_t length) noexcept;
-
-size_t maximal_binary_length_from_base64(const char* input,
-                                         size_t length) noexcept;
-
-result base64_to_binary(const char* input, size_t length, char* output,
-                        base64_options options = base64_default) noexcept;
-
-size_t
-base64_length_from_binary(size_t length,
-                          base64_options options = base64_default) noexcept;
-
-size_t binary_to_base64(const char* input, size_t length, char* output,
-                        base64_options options = base64_default) noexcept;
-
-result base64_to_binary(const char16_t* input, size_t length, char* output,
-                        base64_options options = base64_default) noexcept;
-
-result base64_to_binary_safe(const char* input, size_t length, char* output,
-                             size_t& outlen,
-                             base64_options options = base64_default) noexcept;
-
-result base64_to_binary_safe(const char16_t* input, size_t length, char* output,
-                             size_t& outlen,
-                             base64_options options = base64_default) noexcept;
-#endif
 constexpr std::array options = {
     simdutf::base64_default,          simdutf::base64_url,
     simdutf::base64_reverse_padding,  simdutf::base64_default_no_padding,
@@ -93,6 +60,54 @@ void decode(std::span<const FromChar> base64_, const auto selected_option) {
     }
     std::cerr << "}\n";
     std::abort();
+  }
+}
+
+template <typename FromChar>
+void decode_safe(std::span<const FromChar> base64_, const auto selected_option,
+                 const std::size_t decode_buf_size) {
+  // force to ascii to follow the restriction on the base64_to_binary input.
+  // however, not doing so uncovered a real bug, see
+  // https://github.com/simdutf/simdutf/issues/503#issuecomment-2287154397
+  std::vector<FromChar> base64(begin(base64_), end(base64_));
+  if (!allow_invalid_16bit_input) {
+    for (auto& x : base64) {
+      x &= 0xFF;
+    }
+  }
+  std::vector<char> output(decode_buf_size);
+  std::size_t outlen = decode_buf_size;
+  const auto convertresult = simdutf::base64_to_binary_safe(
+      base64.data(), base64.size(), output.data(), outlen, selected_option);
+
+  // the number of written bytes must always be less than the supplied buffer
+  assert(outlen <= decode_buf_size);
+
+  switch (convertresult.error) {
+  case simdutf::error_code::OUTPUT_BUFFER_TOO_SMALL: {
+    if (!(convertresult.count <= base64.size())) {
+      std::cerr << " decode_buf_size=" << decode_buf_size
+                << " outlen=" << outlen << " and result=" << convertresult
+                << '\n';
+      std::abort();
+    }
+  } break;
+  case simdutf::error_code::INVALID_BASE64_CHARACTER: {
+    assert(convertresult.count < base64.size());
+  } break;
+  case simdutf::error_code::BASE64_INPUT_REMAINDER: {
+    if (!(convertresult.count <= base64.size())) {
+      std::cerr << "on input with size=" << base64.size()
+                << ": got BASE64_INPUT_REMAINDER decode_buf_size="
+                << decode_buf_size << " outlen=" << outlen
+                << " and result=" << convertresult << '\n';
+      std::abort();
+    }
+  } break;
+  case simdutf::error_code::SUCCESS: {
+    // possibility to compare with the normal function
+  } break;
+  default:;
   }
 }
 
@@ -155,7 +170,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   if (size < 4) {
     return 0;
   }
-  constexpr auto Ncases = 3u;
+  constexpr auto Ncases = 5u;
   constexpr auto actionmask = std::bit_ceil(Ncases) - 1;
   const auto action = data[0] & actionmask;
 
@@ -167,6 +182,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
       return options[index];
     }
   }(data[1] & (std::bit_ceil(options.size()) - 1));
+
+  // decode buffer size
+  const std::size_t decode_buffer_size = (data[3] << 8) + data[2];
 
   data += 4;
   size -= 4;
@@ -183,6 +201,14 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   case 2: {
     const std::span<const char16_t> chardata{(const char16_t*)data, size / 2};
     decode(chardata, selected_option);
+  } break;
+  case 3: {
+    const std::span<const char> chardata{(const char*)data, size};
+    decode_safe(chardata, selected_option, decode_buffer_size);
+  } break;
+  case 4: {
+    const std::span<const char16_t> chardata{(const char16_t*)data, size / 2};
+    decode_safe(chardata, selected_option, decode_buffer_size);
   } break;
   }
 
