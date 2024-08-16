@@ -5,6 +5,29 @@
 #include <tests/helpers/random_int.h>
 #include <tests/helpers/test.h>
 
+TEST(issue_520)
+{
+    // output differs between implementations for decode
+    // impl arm64 got maxbinarylength=48 convertresult=[count=64, error=INVALID_BASE64_CHARACTER]
+    // impl fallback got maxbinarylength=48 convertresult=[count=0, error=BASE64_INPUT_REMAINDER]
+    // option: 0
+    // data: char{32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 12, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 82, }
+
+    std::vector<unsigned char> data{
+        32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 12, 32, 32, 32, 32, 32, 32, 32,
+        32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32,
+        32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 82,
+    };
+    std::vector<char> out(48);
+
+    const auto r = implementation.base64_to_binary((const char *) data.data(),
+                                                   data.size(),
+                                                   out.data(),
+                                                   simdutf::base64_default);
+    ASSERT_EQUAL(r.error, simdutf::error_code::BASE64_INPUT_REMAINDER);
+    ASSERT_EQUAL(r.count, 0);
+}
+
 TEST(issue_502_xxx)
 {
     return;
