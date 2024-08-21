@@ -6,9 +6,12 @@
 
 #include <algorithm>
 #include <charconv>
+#include <cstdlib>
 #include <iostream>
+#include <ranges>
 #include <span>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
@@ -24,11 +27,28 @@ concept member_function_pointer = std::is_member_function_pointer_v<T>;
 inline std::span<const simdutf::implementation* const>
 get_supported_implementations() {
   static const auto impl = []() -> auto {
+    std::vector<std::string> only;
+    if (const char* onlyenv = std::getenv("FUZZ_ONLY_IMPLEMENTATIONS");
+        onlyenv) {
+      for (const auto word :
+           std::views::split(std::string_view{onlyenv}, ':')) {
+        only.emplace_back(std::begin(word), std::end(word));
+      }
+      std::cerr << "FUZZ_ONLY_IMPLEMENTATIONS is set to " << onlyenv << "\n";
+    } else {
+      std::cerr << "set FUZZ_ONLY_IMPLEMENTATIONS=impl1:impl2.... to only fuzz "
+                   "a subset of the available implementations.\n";
+    }
+    auto is_ignored = [&only](std::string_view name) {
+      return !only.empty() && std::ranges::count(only, name) == 0;
+    };
+
     std::vector<const simdutf::implementation*> ret;
     for (auto e : simdutf::get_available_implementations()) {
       std::cerr << "implementation " << e->name() << " is available? "
-                << e->supported_by_runtime_system() << '\n';
-      if (e->supported_by_runtime_system()) {
+                << e->supported_by_runtime_system() << " ignored? "
+                << is_ignored(e->name()) << '\n';
+      if (e->supported_by_runtime_system() && !is_ignored(e->name())) {
         ret.push_back(e);
       }
     }
